@@ -1,5 +1,8 @@
 # da big CS project
 ## me & mx. thunder's cs course final project
+CANS
+![cans logo](./asset/image.webp)
+
 
 
 # ßcompiling
@@ -16,3 +19,5 @@ windows
 ```
     idk i use gcc in WSL to compile still
 ```
+
+what if it was 
