@@ -1,17 +1,18 @@
-# da big CS project
+# CANS: da big CS project
 ## me & mx. thunder's cs course final project
-CANS
+
+
 ![cans logo](./asset/image.webp)
 
 
 
-# ßcompiling
+# compiling
 linux/macOS/WSL
 ```
     ./run.sh
-
+```
     or
-
+```
     gcc -Wall -o cans_app main.c && ./cans_app
 ```
 
@@ -19,5 +20,3 @@ windows
 ```
     idk i use gcc in WSL to compile still
 ```
-
-what if it was 

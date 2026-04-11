@@ -7,6 +7,14 @@
 #define COLUMN_DIVIDER '\t'
 #define LINE_DIVIDER '\n'
 
+// TODO: move all funcs into prototypes!
+
+enum UserStates {
+    Main,
+    Add,
+    History
+};
+
 typedef struct Food
 {
     char name[MAX_FOOD_NAME_LENGTH];
@@ -14,6 +22,8 @@ typedef struct Food
     struct Food *next;
 } Food;
 
+#pragma region 
+#pragma endregion
 // GLOBALS
 Food *g_head;
 Food *g_tail;
@@ -145,17 +155,38 @@ int Exit()
     return 0;
 }
 
+
+
 int main(void)
 {
     printf("Welcome to C.A.N.S.\n");
+    enum UserStates state = Main; // 
     // AppendFood( InitFood("hello POOP",1) );
     // AppendFood( InitFood("penis sauce",1));
 
-    // data_SerializeFood();
+
+
+    // On load setup
     data_DeserializeFood();
+
     IterateFoods(PrintFood);
 
-    // data_SerializeFood();
+    while (1) {
+        break;
+        switch (state)
+        {
+        case default:
+        case Main:
+            printf("Main View ---\n");
+            // TODO: Display 3 most recent changes 
+            // TODO: Display 3 lowest food supplies
+            break;
+        }
+        
+        
+        
+
+    }
 
     return Exit();
 }
