@@ -28,6 +28,7 @@ enum Operations
 {
     ADD_FOOD,
     REMOVE_FOOD,
+    UPDATE_FOOD
 
 };
 
@@ -50,7 +51,7 @@ typedef struct HistoryItem
 // GLOBALS
 
 Food *g_foodHead;
-Food *g_tailHead;
+Food *g_foodTail;
 
 Food *InitFood(char name[], int count)
 {
@@ -75,12 +76,12 @@ void AppendFood(Food *food)
     if (g_foodHead == NULL)
     {
         g_foodHead = food;
-        g_tailHead = food;
+        g_foodTail = food;
     }
     else
     {
-        g_tailHead->next = food;
-        g_tailHead = food;
+        g_foodTail->next = food;
+        g_foodTail = food;
     }
     return;
 }
@@ -116,7 +117,7 @@ void data_SerializeFood()
     Food *ptr = g_foodHead;
     while (ptr != NULL)
     {
-        fprintf(datafile, "%s%c%d\n", ptr->name, COLUMN_DIVIDER, ptr->count);
+        fprintf(datafile, "%s%c%d%c", ptr->name, COLUMN_DIVIDER, ptr->count, LINE_DIVIDER);
         ptr = ptr->next;
     };
 }
@@ -201,18 +202,24 @@ void MainTree()
     // TODO: Display 3 most recent operations
     // TODO: Display 0-3 highest and lowest stocked items
     // TODO: maybe? make above two configurable
-    printf("Please enter a command\n");
-    printf("[1] to ADD a \n");
-    // apr 11: im tired im leaving off here
-    int command = 0;
+
+    int command = NULL;
     while (1)
-    {   
-        scanf(" %d",&command);
-
+    {
+        printf("Please enter a command\n");
+        printf("[1] to UPDATE quantities of the stored foods");
+        printf("[2] to ADD a food to the database\n");
+        printf("[3] to REMOVE a food from the database\n");
+        printf("[4] for session logs.");
+        int wasSuccessful = scanf(" %d", &command);
+        // Sanity checks/input sanitization
+        if (!wasSuccessful )
+        {
+            printf("Invalid command");
+            continue;
+        }
+        
     }
-    
-
-
 }
 
 int main(void)
@@ -235,7 +242,6 @@ int main(void)
         default:
         case MAIN_MENU:
             MainTree();
-
             break;
         }
     }
