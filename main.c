@@ -14,15 +14,15 @@
 
 // TODO: move all funcs into prototypes for codebase sake
 
-
-
 enum UserStates
 {
     MAIN_MENU,
     UPDATE_MENU,
+    ADD_MENU,
     REMOVE_MENU,
     LIST_MENU,
     LOG_MENU,
+    EXIT_STATE
 
 };
 
@@ -60,6 +60,7 @@ HistoryItem *g_logTail;
 Food *InitFood(char name[], int count);
 void AppendFood(Food *food);
 void IterateFoods(void (*callback)(Food *));
+int TotalStock();
 void PrintFood(Food *food);
 // History Management
 HistoryItem *InitHistoryItem(char note[]);
@@ -69,9 +70,11 @@ void data_RewriteLogs();
 void data_LoadLogs();
 void data_SerializeFood();
 void data_DeserializeFood();
-//Program States and Utility
+// Program States and Utility
 void MainTree();
 void AddFoodMenu();
+void RemoveFoodMenu();
+void UpdateFoodMenu();
 void MenuTitle(char *header, char *subheader);
 void LineBreakNTimes(int n);
 int Exit();
@@ -79,7 +82,7 @@ int Exit();
 int main(void)
 {
     printf("Welcome to C.A.N.S.\n");
-    
+
     // AppendFood( InitFood("hello POOP",1) );
     // AppendFood( InitFood("penis sauce",1));
 
@@ -113,7 +116,6 @@ Food *InitFood(char name[], int count)
     return food;
 }
 
-
 void AppendFood(Food *food)
 {
     if (g_foodHead == NULL)
@@ -140,15 +142,29 @@ void IterateFoods(void (*callback)(Food *))
     };
 }
 
+int TotalStock()
+{
+    // i really like the legend of zelda majora's mask - apr 12 3:30pm
+    Food *ptr = g_foodHead;
+    int total = 0;
+    while (ptr != NULL)
+    {
+        total += ptr->count;
+        ptr = ptr->next;
+    };
+    return total;
+}
+
 void PrintFood(Food *food)
 {
     printf("%s [%d]\n", food->name, food->count);
 }
 // History linkedlist operations
 
-HistoryItem *InitHistoryItem(char note[]) {
+HistoryItem *InitHistoryItem(char note[])
+{
     HistoryItem *newOperation = malloc(sizeof(HistoryItem));
-    strcpy(newOperation->note,note);
+    strcpy(newOperation->note, note);
     newOperation->next = NULL;
     return newOperation;
     // enum Operations action;
@@ -175,32 +191,33 @@ void AppendHistoryItem(HistoryItem *item)
 // marked with data_ to signify the importance
 // running some of these when not needed may be really bad
 
-void data_RewriteLogs() 
+void data_RewriteLogs()
 // rewrite and not write because it rewrites everything every time its called
 // no need for the serialization algorithm because its just linebreak seperated data
 {
     FILE *logfile;
 
-    logfile = fopen("./CANS.log","w");
+    logfile = fopen("./CANS.log", "w");
     if (logfile == NULL)
     {
-        printf("Failed to open ./CANS.log\n");  
+        printf("Failed to open ./CANS.log\n");
         return;
     };
 
     HistoryItem *ptr = g_logHead;
     while (ptr != NULL)
     {
-        fprintf(logfile,"%s\n",ptr->note);
+        fprintf(logfile, "%s\n", ptr->note);
         ptr = ptr->next;
     };
     fclose(logfile);
 }
 
-void data_LoadLogs() {
+void data_LoadLogs()
+{
     FILE *logfile;
 
-    logfile = fopen("./CANS.log","r");
+    logfile = fopen("./CANS.log", "r");
     if (logfile == NULL)
     {
         printf("No existing log file, writing log...\n");
@@ -208,7 +225,8 @@ void data_LoadLogs() {
     };
 
     char buffer[LOADING_BUFFER_LENGTH];
-    while (fgets(buffer,sizeof(buffer),logfile)) {
+    while (fgets(buffer, sizeof(buffer), logfile))
+    {
         AppendHistoryItem(InitHistoryItem(buffer));
     }
     fclose(logfile);
@@ -260,7 +278,7 @@ void data_DeserializeFood()
 
     int c;
     char buffer[LOADING_BUFFER_LENGTH] = "";
-    Food *food = InitFood("",0);
+    Food *food = InitFood("", 0);
     int i = 0;
     char *strTarget = food->name;
 
@@ -277,13 +295,12 @@ void data_DeserializeFood()
             food->count = strtod(buffer, NULL);
             strcpy(buffer, "");
             AppendFood(food);
-            food = InitFood("",0);
+            food = InitFood("", 0);
             strTarget = food->name;
             i = 0;
             continue;
         }
         *(strTarget + i++) = c;
-        // printf("%c", cur);
     }
     fclose(datafile);
 }
@@ -318,8 +335,22 @@ void MenuTitle(char *header, char *subheader)
     printf("\n%s\n", TITLE_DIVIDER);
 }
 
-void AddFoodMenu() {
-
+void AddFoodMenu()
+{
+    MenuTitle("Add Food", "Add a new type of food to the database");
+    // TODO: fgets the name and count of the food and use appendfood to add it to the database;
+}
+void RemoveFoodMenu()
+{
+    // TODO: remove node Y by freeing it after assigning its parent node's next value to node Y's next value
+}
+void UpdateFoodMenu()
+{
+    // TODO: fgets the name and subcommand
+        // add to
+        // set
+        // subtract from
+    // then fgets & sscanf the amount
 }
 
 void MainTree()
@@ -329,6 +360,7 @@ void MainTree()
     // TODO: Display 0-3 highest and lowest stocked items
     // TODO: maybe? make above two configurable
     int command;
+    char cmdBuffer[100];
 
     printf("Please enter a command\n");
     printf("[1] to UPDATE quantities of the stored foods\n");
@@ -336,10 +368,13 @@ void MainTree()
     printf("[3] to REMOVE a food from the database\n");
     printf("[4] to LIST out the current database\n");
     printf("[5] for session logs.\n");
+    printf("[6] to exit the program\n");
     printf("Press a listed number followed by [Enter] to choose an option.\n");
-    getchar();
-    int scanStatus = scanf(" %d", &command);
-    // ctrl+d causes infinite looping? seems like a machine level error from my research
+    // getchar();
+    fgets(cmdBuffer, sizeof(cmdBuffer), stdin);
+    int scanStatus = sscanf(cmdBuffer, "%d", &command);
+
+    printf("%d bobo\n", command); // TODO: remove debug line
     if (scanStatus != 1)
     {
         printf("Invalid command.");
@@ -353,11 +388,17 @@ void MainTree()
         break;
     case 2:
         LineBreakNTimes(2);
+        g_state = ADD_MENU;
+    case 3:
+        LineBreakNTimes(2);
+        g_state = REMOVE_MENU;
+    case 4:
+        // whoopee, short enough to handle in the maintree
+        MenuTitle("Current Database", "Each food and how much is in stock");
         IterateFoods(PrintFood);
+    case 5:
         LineBreakNTimes(2);
     default:
         break;
     }
-
 }
-
