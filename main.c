@@ -7,12 +7,28 @@
 #define COLUMN_DIVIDER '\t'
 #define LINE_DIVIDER '\n'
 
-// TODO: move all funcs into prototypes!
+// cries myself to sleep because i chose a OOP project in C of all things - Apr 11, 2025 9:41 PM
 
-enum UserStates {
-    Main,
-    Add,
-    History
+// @ TAYLER, see if your code editor has a TODO thing that searches for all instances of TODO in a codebase and puts it in a list, so useful epic
+
+// TODO: move all funcs into prototypes for codebase sake
+
+enum UserStates
+{
+    MAIN_MENU,
+    DB_ADD_MENU,
+    QUANTITY_ADD_MENU,
+    REMOVE_MENU,
+    LOG_MENU,
+    EXPORT // export to a slightly prettier version of the .cansdata format
+
+};
+
+enum Operations
+{
+    ADD_FOOD,
+    REMOVE_FOOD,
+
 };
 
 typedef struct Food
@@ -22,11 +38,19 @@ typedef struct Food
     struct Food *next;
 } Food;
 
-#pragma region 
+typedef struct HistoryItem
+{
+    enum Operations action;
+    char note[32];
+
+} HistoryItem;
+
+#pragma region
 #pragma endregion
 // GLOBALS
-Food *g_head;
-Food *g_tail;
+
+Food *g_foodHead;
+Food *g_tailHead;
 
 Food *InitFood(char name[], int count)
 {
@@ -48,15 +72,15 @@ Food *InitEmptyFood()
 
 void AppendFood(Food *food)
 {
-    if (g_head == NULL)
+    if (g_foodHead == NULL)
     {
-        g_head = food;
-        g_tail = food;
+        g_foodHead = food;
+        g_tailHead = food;
     }
     else
     {
-        g_tail->next = food;
-        g_tail = food;
+        g_tailHead->next = food;
+        g_tailHead = food;
     }
     return;
 }
@@ -64,7 +88,7 @@ void AppendFood(Food *food)
 void IterateFoods(void (*callback)(Food *))
 { // mostly a recipe for later use, but feel free to use with PrintFood
     // under the assumption that following the trail of nexts from the head will always reach the tail
-    Food *ptr = g_head;
+    Food *ptr = g_foodHead;
     while (ptr != NULL)
     {
         callback(ptr);
@@ -85,10 +109,11 @@ void data_SerializeFood()
     datafile = fopen("./.cansdata", "w");
     if (datafile == NULL)
     {
-        printf("Failed to open data file ./.cansdata");
+        printf("No existing data, writing data... ./.cansdata\n");
+        fopen("./.cansdata", "w");
     }
 
-    Food *ptr = g_head;
+    Food *ptr = g_foodHead;
     while (ptr != NULL)
     {
         fprintf(datafile, "%s%c%d\n", ptr->name, COLUMN_DIVIDER, ptr->count);
@@ -104,18 +129,19 @@ void data_DeserializeFood()
     // if the letter is the LINE_DIVIDER, do the following
     /*
         - convert buffer to a number
-        - assign that number it to the current food's count 
+        - assign that number it to the current food's count
         - append the food
         - clear the buffer
-        - 
+        -
     */
     FILE *datafile;
 
     datafile = fopen(".cansdata", "r");
     if (datafile == NULL)
     {
-        printf("Failed to open ./.cansdata");
-        return;
+        printf("No existing data, writing data... ./.cansdata\n");
+        fopen("./.cansdata", "w");
+        return data_DeserializeFood();
     }
 
     int c;
@@ -123,8 +149,6 @@ void data_DeserializeFood()
     Food *food = InitEmptyFood();
     int i = 0;
     char *strTarget = food->name;
-
-    
 
     while ((c = fgetc(datafile)) != EOF)
     {
@@ -136,15 +160,15 @@ void data_DeserializeFood()
         }
         if (c == LINE_DIVIDER)
         {
-            food->count = strtod(buffer,NULL);
-            strcpy(buffer,"");
+            food->count = strtod(buffer, NULL);
+            strcpy(buffer, "");
             AppendFood(food);
             food = InitEmptyFood();
             strTarget = food->name;
             i = 0;
             continue;
         }
-        *(strTarget+i++) = c;
+        *(strTarget + i++) = c;
         // printf("%c", cur);
     }
 }
@@ -155,37 +179,65 @@ int Exit()
     return 0;
 }
 
+void MenuTitle(char *header, char *subheader)
+{
+    // TODO: figure out if its possible to filter the end of strings without null terminators because the program will bork itself
+    printf("\n[CANS] ");
+    while (*header != '\0')
+    {
+        printf("%c", *(header++));
+    }
+    printf("\n");
+    while (*subheader != '\0')
+    {
+        printf("%c", *(subheader++));
+    }
+    printf("\n\n");
+}
 
+void MainTree()
+{
+    MenuTitle("Menu", "View important or urgent info and choose operations");
+    // TODO: Display 3 most recent operations
+    // TODO: Display 0-3 highest and lowest stocked items
+    // TODO: maybe? make above two configurable
+    printf("Please enter a command\n");
+    printf("[1] to ADD a \n");
+    // apr 11: im tired im leaving off here
+    int command = 0;
+    while (1)
+    {   
+        scanf(" %d",&command);
+
+    }
+    
+
+
+}
 
 int main(void)
 {
     printf("Welcome to C.A.N.S.\n");
-    enum UserStates state = Main; // 
+    enum UserStates state = MAIN_MENU; //
     // AppendFood( InitFood("hello POOP",1) );
     // AppendFood( InitFood("penis sauce",1));
-
-
 
     // On load setup
     data_DeserializeFood();
 
     IterateFoods(PrintFood);
-
-    while (1) {
+    MenuTitle("Menu", "View important or urgent info and choose operations");
+    while (1)
+    {
         break;
         switch (state)
         {
-        case default:
-        case Main:
-            printf("Main View ---\n");
-            // TODO: Display 3 most recent changes 
-            // TODO: Display 3 lowest food supplies
+        default:
+        case MAIN_MENU:
+            MainTree();
+
             break;
         }
-        
-        
-        
-
     }
 
     return Exit();
