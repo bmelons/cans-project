@@ -202,15 +202,16 @@ void MainTree()
     // TODO: Display 3 most recent operations
     // TODO: Display 0-3 highest and lowest stocked items
     // TODO: maybe? make above two configurable
-
-    int command = NULL;
+    int command;
+    printf("??");
     while (1)
     {
         printf("Please enter a command\n");
-        printf("[1] to UPDATE quantities of the stored foods");
+        printf("[1] to UPDATE quantities of the stored foods\n");
         printf("[2] to ADD a food to the database\n");
         printf("[3] to REMOVE a food from the database\n");
-        printf("[4] for session logs.");
+        printf("[4] to VIEW the current database\n");
+        printf("[5] for session logs.\n");
         int wasSuccessful = scanf(" %d", &command);
         // Sanity checks/input sanitization
         if (!wasSuccessful )
@@ -233,10 +234,10 @@ int main(void)
     data_DeserializeFood();
 
     IterateFoods(PrintFood);
-    MenuTitle("Menu", "View important or urgent info and choose operations");
+    // MenuTitle("Menu", "View important or urgent info and choose operations");
     while (1)
     {
-        break;
+        // break;
         switch (state)
         {
         default:
