@@ -3,9 +3,10 @@
 #include <string.h>
 
 #define MAX_FOOD_NAME_LENGTH 64
-#define DESERIALIZATION_BUFFER_LENGTH 1024
+#define LOADING_BUFFER_LENGTH 128
 #define COLUMN_DIVIDER '\t'
 #define LINE_DIVIDER '\n'
+#define TITLE_DIVIDER ">-----"
 
 // cries myself to sleep because i chose a OOP project in C of all things - Apr 11, 2025 9:41 PM
 
@@ -13,22 +14,23 @@
 
 // TODO: move all funcs into prototypes for codebase sake
 
+
+
 enum UserStates
 {
     MAIN_MENU,
-    DB_ADD_MENU,
-    QUANTITY_ADD_MENU,
+    UPDATE_MENU,
     REMOVE_MENU,
+    LIST_MENU,
     LOG_MENU,
-    EXPORT // export to a slightly prettier version of the .cansdata format
 
 };
 
 enum Operations
 {
-    ADD_FOOD,
-    REMOVE_FOOD,
-    UPDATE_FOOD
+    UPDATED_FOOD,
+    ADDED_FOOD,
+    REMOVED_FOOD,
 
 };
 
@@ -41,18 +43,67 @@ typedef struct Food
 
 typedef struct HistoryItem
 {
-    enum Operations action;
     char note[32];
+    struct HistoryItem *next;
 
 } HistoryItem;
 
-#pragma region
-#pragma endregion
 // GLOBALS
-
+enum UserStates g_state = MAIN_MENU;
 Food *g_foodHead;
 Food *g_foodTail;
+HistoryItem *g_logHead;
+HistoryItem *g_logTail;
 
+// PROTOTYPES
+// Food List Management
+Food *InitFood(char name[], int count);
+void AppendFood(Food *food);
+void IterateFoods(void (*callback)(Food *));
+void PrintFood(Food *food);
+// History Management
+HistoryItem *InitHistoryItem(char note[]);
+void AppendHistoryItem(HistoryItem *item);
+// Data Management
+void data_RewriteLogs();
+void data_LoadLogs();
+void data_SerializeFood();
+void data_DeserializeFood();
+//Program States and Utility
+void MainTree();
+void AddFoodMenu();
+void MenuTitle(char *header, char *subheader);
+void LineBreakNTimes(int n);
+int Exit();
+
+int main(void)
+{
+    printf("Welcome to C.A.N.S.\n");
+    
+    // AppendFood( InitFood("hello POOP",1) );
+    // AppendFood( InitFood("penis sauce",1));
+
+    // On load setup
+    data_DeserializeFood();
+
+    IterateFoods(PrintFood);
+    // MenuTitle("Menu", "View important or urgent info and choose operations");
+    while (1)
+    {
+        // break;
+        switch (g_state)
+        {
+        default:
+        case MAIN_MENU:
+            MainTree();
+        }
+        LineBreakNTimes(1);
+    }
+
+    return Exit();
+}
+
+// Food Linkedlist Operations
 Food *InitFood(char name[], int count)
 {
     Food *food = malloc(sizeof(Food));
@@ -62,14 +113,6 @@ Food *InitFood(char name[], int count)
     return food;
 }
 
-Food *InitEmptyFood()
-{
-    Food *food = malloc(sizeof(Food));
-    strcpy(food->name, "");
-    food->count = 0;
-    food->next = NULL;
-    return food;
-}
 
 void AppendFood(Food *food)
 {
@@ -101,18 +144,87 @@ void PrintFood(Food *food)
 {
     printf("%s [%d]\n", food->name, food->count);
 }
+// History linkedlist operations
+
+HistoryItem *InitHistoryItem(char note[]) {
+    HistoryItem *newOperation = malloc(sizeof(HistoryItem));
+    strcpy(newOperation->note,note);
+    newOperation->next = NULL;
+    return newOperation;
+    // enum Operations action;
+    // char note[32];
+    // struct HistoryItem *next;
+}
+
+void AppendHistoryItem(HistoryItem *item)
+{
+    if (g_logHead == NULL)
+    {
+        g_logHead = item;
+        g_logTail = item;
+    }
+    else
+    {
+        g_logTail->next = item;
+        g_logTail = item;
+    }
+    return;
+}
+
+// external data handling
+// marked with data_ to signify the importance
+// running some of these when not needed may be really bad
+
+void data_RewriteLogs() 
+// rewrite and not write because it rewrites everything every time its called
+// no need for the serialization algorithm because its just linebreak seperated data
+{
+    FILE *logfile;
+
+    logfile = fopen("./CANS.log","w");
+    if (logfile == NULL)
+    {
+        printf("Failed to open ./CANS.log\n");  
+        return;
+    };
+
+    HistoryItem *ptr = g_logHead;
+    while (ptr != NULL)
+    {
+        fprintf(logfile,"%s\n",ptr->note);
+        ptr = ptr->next;
+    };
+    fclose(logfile);
+}
+
+void data_LoadLogs() {
+    FILE *logfile;
+
+    logfile = fopen("./CANS.log","r");
+    if (logfile == NULL)
+    {
+        printf("No existing log file, writing log...\n");
+        return;
+    };
+
+    char buffer[LOADING_BUFFER_LENGTH];
+    while (fgets(buffer,sizeof(buffer),logfile)) {
+        AppendHistoryItem(InitHistoryItem(buffer));
+    }
+    fclose(logfile);
+}
 
 void data_SerializeFood()
 {
     FILE *datafile;
     // char *datastring = malloc(2048*sizeof(char));
 
-    datafile = fopen("./.cansdata", "w");
+    datafile = fopen("./.cansdata", "r");
     if (datafile == NULL)
     {
         printf("No existing data, writing data... ./.cansdata\n");
-        fopen("./.cansdata", "w");
     }
+    fopen("./.cansdata", "w");
 
     Food *ptr = g_foodHead;
     while (ptr != NULL)
@@ -120,6 +232,7 @@ void data_SerializeFood()
         fprintf(datafile, "%s%c%d%c", ptr->name, COLUMN_DIVIDER, ptr->count, LINE_DIVIDER);
         ptr = ptr->next;
     };
+    fclose(datafile);
 }
 
 void data_DeserializeFood()
@@ -146,8 +259,8 @@ void data_DeserializeFood()
     }
 
     int c;
-    char buffer[DESERIALIZATION_BUFFER_LENGTH] = "";
-    Food *food = InitEmptyFood();
+    char buffer[LOADING_BUFFER_LENGTH] = "";
+    Food *food = InitFood("",0);
     int i = 0;
     char *strTarget = food->name;
 
@@ -164,7 +277,7 @@ void data_DeserializeFood()
             food->count = strtod(buffer, NULL);
             strcpy(buffer, "");
             AppendFood(food);
-            food = InitEmptyFood();
+            food = InitFood("",0);
             strTarget = food->name;
             i = 0;
             continue;
@@ -172,12 +285,21 @@ void data_DeserializeFood()
         *(strTarget + i++) = c;
         // printf("%c", cur);
     }
+    fclose(datafile);
 }
 
 int Exit()
 {
     // TODO: free all nodes/foods
     return 0;
+}
+
+void LineBreakNTimes(int n)
+{
+    for (; n > 0; n--)
+    {
+        printf("\n");
+    }
 }
 
 void MenuTitle(char *header, char *subheader)
@@ -193,7 +315,11 @@ void MenuTitle(char *header, char *subheader)
     {
         printf("%c", *(subheader++));
     }
-    printf("\n\n");
+    printf("\n%s\n", TITLE_DIVIDER);
+}
+
+void AddFoodMenu() {
+
 }
 
 void MainTree()
@@ -203,49 +329,35 @@ void MainTree()
     // TODO: Display 0-3 highest and lowest stocked items
     // TODO: maybe? make above two configurable
     int command;
-    printf("??");
-    while (1)
+
+    printf("Please enter a command\n");
+    printf("[1] to UPDATE quantities of the stored foods\n");
+    printf("[2] to ADD a food to the database\n");
+    printf("[3] to REMOVE a food from the database\n");
+    printf("[4] to LIST out the current database\n");
+    printf("[5] for session logs.\n");
+    printf("Press a listed number followed by [Enter] to choose an option.\n");
+    getchar();
+    int scanStatus = scanf(" %d", &command);
+    // ctrl+d causes infinite looping? seems like a machine level error from my research
+    if (scanStatus != 1)
     {
-        printf("Please enter a command\n");
-        printf("[1] to UPDATE quantities of the stored foods\n");
-        printf("[2] to ADD a food to the database\n");
-        printf("[3] to REMOVE a food from the database\n");
-        printf("[4] to VIEW the current database\n");
-        printf("[5] for session logs.\n");
-        int wasSuccessful = scanf(" %d", &command);
-        // Sanity checks/input sanitization
-        if (!wasSuccessful )
-        {
-            printf("Invalid command");
-            continue;
-        }
-        
+        printf("Invalid command.");
+        return;
     }
-}
-
-int main(void)
-{
-    printf("Welcome to C.A.N.S.\n");
-    enum UserStates state = MAIN_MENU; //
-    // AppendFood( InitFood("hello POOP",1) );
-    // AppendFood( InitFood("penis sauce",1));
-
-    // On load setup
-    data_DeserializeFood();
-
-    IterateFoods(PrintFood);
-    // MenuTitle("Menu", "View important or urgent info and choose operations");
-    while (1)
+    switch (command)
     {
-        // break;
-        switch (state)
-        {
-        default:
-        case MAIN_MENU:
-            MainTree();
-            break;
-        }
+    case 1:
+        LineBreakNTimes(2);
+        g_state = UPDATE_MENU;
+        break;
+    case 2:
+        LineBreakNTimes(2);
+        IterateFoods(PrintFood);
+        LineBreakNTimes(2);
+    default:
+        break;
     }
 
-    return Exit();
 }
+
