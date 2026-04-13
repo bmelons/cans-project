@@ -77,6 +77,7 @@ void RemoveFoodMenu();
 void UpdateFoodMenu();
 void MenuTitle(char *header, char *subheader);
 void LineBreakNTimes(int n);
+void TrimNewline(char *str);
 int Exit();
 
 int main(void)
@@ -272,8 +273,9 @@ void data_DeserializeFood()
     if (datafile == NULL)
     {
         printf("No existing data, writing data... ./.cansdata\n");
-        fopen("./.cansdata", "w");
-        return data_DeserializeFood();
+        fclose(fopen("./.cansdata", "w"));
+
+        return;
     }
 
     int c;
@@ -303,6 +305,27 @@ void data_DeserializeFood()
         *(strTarget + i++) = c;
     }
     fclose(datafile);
+}
+
+void TrimNewline(char *str)
+{
+    while (*str != '\n')
+    {
+        *str = '\0';
+    }
+}
+
+void Pause() {
+    printf("Press enter to continue...\n");
+    getchar();
+}
+
+int Confirm() {
+    printf("Enter y/n to confirm...");
+    char command;
+    scanf("%c",&command);
+    
+
 }
 
 int Exit()
@@ -338,6 +361,13 @@ void MenuTitle(char *header, char *subheader)
 void AddFoodMenu()
 {
     MenuTitle("Add Food", "Add a new type of food to the database");
+    char name[LOADING_BUFFER_LENGTH];
+    char countBuffer[LOADING_BUFFER_LENGTH];
+    printf("Please enter the name of the new food");
+    fgets(name, sizeof(name), stdin);
+    fgets(countBuffer, sizeof(countBuffer), stdin);
+    TrimNewline(name);
+
     // TODO: fgets the name and count of the food and use appendfood to add it to the database;
 }
 void RemoveFoodMenu()
@@ -347,9 +377,9 @@ void RemoveFoodMenu()
 void UpdateFoodMenu()
 {
     // TODO: fgets the name and subcommand
-        // add to
-        // set
-        // subtract from
+    // add to
+    // set
+    // subtract from
     // then fgets & sscanf the amount
 }
 
@@ -374,7 +404,6 @@ void MainTree()
     fgets(cmdBuffer, sizeof(cmdBuffer), stdin);
     int scanStatus = sscanf(cmdBuffer, "%d", &command);
 
-    printf("%d bobo\n", command); // TODO: remove debug line
     if (scanStatus != 1)
     {
         printf("Invalid command.");
@@ -389,15 +418,19 @@ void MainTree()
     case 2:
         LineBreakNTimes(2);
         g_state = ADD_MENU;
+        break;
     case 3:
         LineBreakNTimes(2);
         g_state = REMOVE_MENU;
+        break;
     case 4:
         // whoopee, short enough to handle in the maintree
         MenuTitle("Current Database", "Each food and how much is in stock");
         IterateFoods(PrintFood);
+        break;
     case 5:
         LineBreakNTimes(2);
+        break;
     default:
         break;
     }
