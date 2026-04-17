@@ -106,12 +106,13 @@ int main(void)
             if (!MainTree())
             {
                 active = 0;
-                break;
             }
+            break;
         case ADD_MENU:
             AddFoodMenu();
             break;
         }
+
         LineBreakNTimes(1);
     }
 
@@ -331,7 +332,7 @@ void Pause()
 
 int Confirm(char msg[])
 {
-    printf(msg);
+    printf("%s",msg);
     char command;
     scanf(" %c", &command);
     if (command == 'y' || command == 'Y')
