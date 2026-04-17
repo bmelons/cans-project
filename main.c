@@ -65,6 +65,7 @@ void PrintFood(Food *food);
 // History Management
 HistoryItem *InitHistoryItem(char note[]);
 void AppendHistoryItem(HistoryItem *item);
+void DisplayHistory();
 // Data Management
 void data_RewriteLogs();
 void data_LoadLogs();
@@ -98,6 +99,7 @@ int main(void)
     // MenuTitle("Menu", "View important or urgent info and choose operations");
     while (active)
     {
+        
         // break;
         switch (g_state)
         {
@@ -114,6 +116,7 @@ int main(void)
         }
 
         LineBreakNTimes(1);
+        ClearBuffer();
     }
 
     return Exit();
@@ -198,6 +201,17 @@ void AppendHistoryItem(HistoryItem *item)
         g_logTail = item;
     }
     return;
+}
+
+void DisplayHistory()
+{
+    HistoryItem *ptr = g_logHead;
+    int id = 1;
+    while (ptr != NULL)
+    {
+        printf("%d: %s", id, ptr->note);
+        ptr = ptr->next;
+    };
 }
 
 // external data handling
@@ -330,35 +344,45 @@ void Pause()
     getchar();
 }
 
-int Confirm(char msg[])
-{
-    printf("%s",msg);
+#include <stdio.h>
+#include <ctype.h> // For tolower()
+
+int Confirm(const char msg[]) {
+    char input[LOADING_BUFFER_LENGTH];
     char command;
-    scanf(" %c", &command);
-    if (command == 'y' || command == 'Y')
-    {
-        return 1;
-    }
-    else if (command == 'n' || command == 'N')
-    {
-        return 0;
-    }
-    else
-    {
-        printf("Invalid input!");
-        return Confirm(msg);
+
+    while (1) {
+        printf("%s (y/n): ", msg);
+        
+        if (fgets(input, sizeof(input), stdin) == NULL) {
+            return 0; // Handle EOF/Error
+        }
+
+        if (sscanf(input, " %c", &command) == 1) {
+            command = tolower(command); 
+
+            if (command == 'y') {
+                return 1;
+            } else if (command == 'n') {
+                return 0;
+            }
+        }
+
+        // 3. If we get here, the input was invalid
+        printf("Invalid input! Please enter 'y' or 'n'.\n");
     }
 }
 
 void ClearBuffer()
 {
     int c;
-    while ((c = getchar()) != '\n' && c != EOF)
-        ;
+    while ((c = getchar()) != '\n' && c != EOF);
 }
 
 int Exit()
 {
+    data_SerializeFood();
+    data_RewriteLogs();
     // TODO: free all nodes/foods
     return 0;
 }
@@ -445,7 +469,7 @@ int MainTree()
     // TODO: maybe? make above two configurable
     int command;
     char cmdBuffer[100];
-
+    
     printf("Please enter a command\n");
     printf("[1] to UPDATE quantities of the stored foods\n");
     printf("[2] to ADD a food to the database\n");
@@ -488,6 +512,12 @@ int MainTree()
         Pause();
         break;
     case 5:
+        MenuTitle("History", "Log of operations");
+        if (g_logHead == NULL)
+        {
+            printf("No operations have been performed yet.\n");
+        }
+        DisplayHistory();
         LineBreakNTimes(2);
         break;
     case 6:
