@@ -6,7 +6,7 @@
 #define LOADING_BUFFER_LENGTH 128
 #define COLUMN_DIVIDER '\t'
 #define LINE_DIVIDER '\n'
-#define TITLE_DIVIDER ">-----"
+#define TITLE_DIVIDER "------"
 
 // cries myself to sleep because i chose a OOP project in C of all things - Apr 11, 2025 9:41 PM
 
@@ -71,18 +71,22 @@ void data_LoadLogs();
 void data_SerializeFood();
 void data_DeserializeFood();
 // Program States and Utility
-void MainTree();
+int MainTree();
 void AddFoodMenu();
 void RemoveFoodMenu();
 void UpdateFoodMenu();
 void MenuTitle(char *header, char *subheader);
 void LineBreakNTimes(int n);
 void TrimNewline(char *str);
+void Pause();
+int Confirm(char msg[]);
+void ClearBuffer();
 int Exit();
 
 int main(void)
 {
     printf("Welcome to C.A.N.S.\n");
+    int active = 1;
 
     // AppendFood( InitFood("hello POOP",1) );
     // AppendFood( InitFood("penis sauce",1));
@@ -92,14 +96,21 @@ int main(void)
 
     IterateFoods(PrintFood);
     // MenuTitle("Menu", "View important or urgent info and choose operations");
-    while (1)
+    while (active)
     {
         // break;
         switch (g_state)
         {
         default:
         case MAIN_MENU:
-            MainTree();
+            if (!MainTree())
+            {
+                active = 0;
+                break;
+            }
+        case ADD_MENU:
+            AddFoodMenu();
+            break;
         }
         LineBreakNTimes(1);
     }
@@ -309,23 +320,40 @@ void data_DeserializeFood()
 
 void TrimNewline(char *str)
 {
-    while (*str != '\n')
-    {
-        *str = '\0';
-    }
+    str[strcspn(str, "\n")] = '\0';
 }
 
-void Pause() {
+void Pause()
+{
     printf("Press enter to continue...\n");
     getchar();
 }
 
-int Confirm() {
-    printf("Enter y/n to confirm...");
+int Confirm(char msg[])
+{
+    printf(msg);
     char command;
-    scanf("%c",&command);
-    
+    scanf(" %c", &command);
+    if (command == 'y' || command == 'Y')
+    {
+        return 1;
+    }
+    else if (command == 'n' || command == 'N')
+    {
+        return 0;
+    }
+    else
+    {
+        printf("Invalid input!");
+        return Confirm(msg);
+    }
+}
 
+void ClearBuffer()
+{
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF)
+        ;
 }
 
 int Exit()
@@ -345,7 +373,8 @@ void LineBreakNTimes(int n)
 void MenuTitle(char *header, char *subheader)
 {
     // TODO: figure out if its possible to filter the end of strings without null terminators because the program will bork itself
-    printf("\n[CANS] ");
+    printf("#################\n");
+    printf("[CANS] ");
     while (*header != '\0')
     {
         printf("%c", *(header++));
@@ -361,14 +390,38 @@ void MenuTitle(char *header, char *subheader)
 void AddFoodMenu()
 {
     MenuTitle("Add Food", "Add a new type of food to the database");
-    char name[LOADING_BUFFER_LENGTH];
     char countBuffer[LOADING_BUFFER_LENGTH];
-    printf("Please enter the name of the new food");
-    fgets(name, sizeof(name), stdin);
+    Food *newFood = InitFood("", 0);
+    printf("Please enter the name of the new food: ");
+    fgets(newFood->name, sizeof(newFood->name), stdin);
+    printf("Please enter an initial amount of the good: ");
     fgets(countBuffer, sizeof(countBuffer), stdin);
-    TrimNewline(name);
+    sscanf(countBuffer, "%d", &(newFood->count));
+    TrimNewline(newFood->name);
 
-    // TODO: fgets the name and count of the food and use appendfood to add it to the database;
+    int addConfirmation = Confirm("Please confirm the database addition [y/n]: ");
+    if (addConfirmation)
+    {
+        AppendFood(newFood);
+        HistoryItem *logitem = InitHistoryItem("Added item.");
+        AppendHistoryItem(logitem);
+        printf("Added %s [x%d] to the database",newFood->name,newFood->count);
+    }
+    else
+    {
+        free(newFood);
+        printf("Cancelled operation");
+    }
+
+    int repeatConfirmation = Confirm("Would you like to continue adding to the database? [y\n]: ");
+    if (repeatConfirmation == 0) {
+        g_state = MAIN_MENU;
+    }
+    // user state is already in add mode, dont need to change it if the user wants to continue
+
+
+
+    return;
 }
 void RemoveFoodMenu()
 {
@@ -383,7 +436,7 @@ void UpdateFoodMenu()
     // then fgets & sscanf the amount
 }
 
-void MainTree()
+int MainTree()
 {
     MenuTitle("Menu", "View important or urgent info and choose operations");
     // TODO: Display 3 most recent operations
@@ -407,7 +460,7 @@ void MainTree()
     if (scanStatus != 1)
     {
         printf("Invalid command.");
-        return;
+        return 1;
     }
     switch (command)
     {
@@ -426,12 +479,20 @@ void MainTree()
     case 4:
         // whoopee, short enough to handle in the maintree
         MenuTitle("Current Database", "Each food and how much is in stock");
+        if (g_foodHead == NULL)
+        {
+            printf("No foods are in the database.\n");
+        }
         IterateFoods(PrintFood);
+        Pause();
         break;
     case 5:
         LineBreakNTimes(2);
         break;
+    case 6:
+        return 0;
     default:
         break;
     }
+    return 1;
 }
