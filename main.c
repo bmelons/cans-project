@@ -415,16 +415,18 @@ void data_DeserializeFood()
     }
 
     int c;
-    char buffer[LOADING_BUFFER_LENGTH] = "";
+    
     Food *food = InitFood("", 0);
     int i = 0;
     char *strTarget = food->name;
-
+    char buffer[LOADING_BUFFER_LENGTH] = "";
     while ((c = fgetc(datafile)) != EOF)
     {
+        
         if (c == COLUMN_DIVIDER)
         {
             *(strTarget + i) = '\0';
+            memset(buffer,0,sizeof(buffer));
             strTarget = buffer;
             i = 0;
             continue;
@@ -432,8 +434,8 @@ void data_DeserializeFood()
         if (c == LINE_DIVIDER)
         {
             food->count = strtol(buffer, NULL, 10);
-            strcpy(buffer, "");
             AppendFood(food);
+            memset(buffer,0,sizeof(buffer));
             food = InitFood("", 0);
             strTarget = food->name;
             i = 0;
