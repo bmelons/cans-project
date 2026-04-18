@@ -143,6 +143,7 @@ Food *QueryFood(char query[])
         {
             return ptr;
         }
+        ptr=ptr->next;
     }
 
     return NULL;
@@ -246,7 +247,7 @@ void DisplayHistory()
     int id = 1;
     while (ptr != NULL)
     {
-        printf("%d: %s", id++, ptr->note);
+        printf("%d: %s\n", id++, ptr->note);
         ptr = ptr->next;
     };
 }
@@ -266,29 +267,37 @@ int CalculateHistoryLength()
 void DisplayNRecentChanges(int n)
 {
 
-    int counter = 0;
     int length = CalculateHistoryLength();
-    HistoryItem *ptr = g_logHead;
-    while (counter < length - n && ptr->next != NULL)
-    {
-        ptr = ptr->next;
-        counter++;
-    }
-    if (counter <= 0)
+    if (length <= 0)
     {
         printf("No recent changes\n");
         LineBreakNTimes(1);
         return;
     }
+    int skips = length-n;
+    if (skips < 0) { // clamp inbounds
+        skips = 0;
+    }
+    HistoryItem *ptr = g_logHead;
+    // go through the list 
+    for (int i = 0; i < skips; i++)
+    {
+        if (ptr != NULL)
+        {
+            ptr = ptr->next;
+        }
+    }
+    
     printf("Recent Changes (old->new)\n");
+    int index = skips + 1;
     while (ptr != NULL)
     {
-        printf("- [%3d] \"%s\"\n", counter, ptr->note);
+        printf("- [%-3d] \"%s\"\n", index, ptr->note);
         ptr = ptr->next;
-        counter++;
+        index++;
     }
+    
     LineBreakNTimes(1);
-    return;
 }
 
 // external data handling
