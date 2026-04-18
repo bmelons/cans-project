@@ -9,8 +9,6 @@
 #define LINE_DIVIDER '\n'
 #define TITLE_DIVIDER "------"
 
-// cries myself to sleep because i chose a OOP project in C of all things - Apr 11, 2025 9:41 PM
-
 // @ TAYLER, see if your code editor has a TODO thing that searches for all instances of TODO in a codebase and puts it in a list, so useful epic
 
 //TODO: one of us, probably me because youre busy, goes and standardizes the return codes, some functions return 0 to indicate success and some return 1 for the same reason
