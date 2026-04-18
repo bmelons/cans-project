@@ -53,8 +53,9 @@ HistoryItem *g_logTail;
 // Food List Management
 Food *InitFood(char name[], int count);
 Food *QueryFood(char query[],char *fullName);
-void AppendFood(Food *food);
+int AppendFood(Food *food);
 int RemoveFood (Food *food);
+void UpdateFood(Food *food,int newQuantity,int setOrAdd);
 void IterateFoods(void (*callback)(Food *));
 int TotalStock();
 void PrintFood(Food *food);
@@ -104,6 +105,9 @@ int main(void)
                 active = 0;
             }
             break;
+        case UPDATE_MENU:
+            UpdateFoodMenu();
+            break;
         case ADD_MENU:
             AddFoodMenu();
             break;
@@ -149,7 +153,7 @@ Food *QueryFood(char query[],char *fullName)
     return NULL;
 }
 
-void AppendFood(Food *food)
+int AppendFood(Food *food)
 {
     if (g_foodHead == NULL)
     {
@@ -161,7 +165,8 @@ void AppendFood(Food *food)
         g_foodTail->next = food;
         g_foodTail = food;
     }
-    return;
+    data_SerializeFood();
+    return 0;
 }
 
 int RemoveFood(Food *food) {
@@ -185,6 +190,23 @@ int RemoveFood(Food *food) {
     return 1;
 }
 
+void UpdateFood(Food *food,int quantity,int isSet) // def
+{
+    if (isSet) {
+        AppendHistoryItem(InitHistoryItem("Set food quantity"));
+        food->count = quantity;
+    }
+    else {
+        if (quantity >= 0) {
+            AppendHistoryItem(InitHistoryItem("Added to a food"));
+        }
+        else{
+            AppendHistoryItem(InitHistoryItem("Subtracted from a food"));
+        }
+        food->count += quantity;
+    }
+    return;
+}
 
 void IterateFoods(void (*callback)(Food *))
 { // mostly a recipe for later use, but feel free to use with PrintFood
@@ -536,7 +558,7 @@ void RemoveFoodMenu()
     TrimNewline(buffer);
     Food *food = QueryFood(buffer,fullName);
     if (food == NULL) {
-        printf("Could not find the food.");
+        printf("Could not find the food.\n");
     }
     else {
         RemoveFood(food);
@@ -551,6 +573,67 @@ void RemoveFoodMenu()
 
 void UpdateFoodMenu()
 {
+    char buffer[LOADING_BUFFER_LENGTH];
+    char fullName[LOADING_BUFFER_LENGTH];
+    printf("Input the name of the food you wish to remove (fuzzy-searched)\n");
+    fgets(buffer,sizeof(buffer),stdin);
+    TrimNewline(buffer);
+    Food *food = QueryFood(buffer,fullName);
+    if (food == NULL) {
+        printf("Could not find the food.\n");
+        return;
+    }
+    printf("Found food! \"%s\"\n",fullName);
+
+    printf("Would you like to\n");
+    printf("[a] Add to the count.\n");
+    printf("[s] Set the count to a specific value.\n");
+    printf("[r] Remove from the count\n");
+    printf("Please enter your choice:\n");
+    int modifier = 1;
+    int isSet = 0;
+    int selectionSuccessful = 0; //  necesarry because break terminates the switch instead of the while
+    while (!selectionSuccessful)
+    {
+        fgets(buffer,sizeof(buffer),stdin);
+        buffer[0] = tolower(buffer[0]);
+        switch (buffer[0])
+        {
+        case 'a':
+            printf("Add selected\n");
+            selectionSuccessful = 1;
+            break;
+        case 's':
+            isSet = 1;
+            printf("Set selected\n");
+            selectionSuccessful = 1;
+            break;
+        case 'r':
+            modifier = -1;
+            printf("Remove selected\n");
+            selectionSuccessful = 1;
+            break;
+        default:
+            printf("Invalid selection.\n");
+            break;
+        }
+    }
+    printf("Please select the quantity:\n");
+    fgets(buffer,sizeof(buffer),stdin);
+    int quantity = 0;
+    sscanf(buffer,"%d",&quantity);
+    UpdateFood(food,quantity*modifier,isSet);
+
+    printf("Updated the food!\n The quantity is now %d.\n",food->count);
+
+    if (Confirm("Do you want to continue updating foods?")) {
+        return;
+    }
+    g_usrState = MAIN_MENU;
+
+    
+    
+    
     // TODO: fgets the name and subcommand
     // add to
     // set
