@@ -2,3 +2,4 @@
 .DS_Store
 cans_app
 .cansdata
+.log
