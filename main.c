@@ -165,7 +165,6 @@ int AppendFood(Food *food)
         g_foodTail->next = food;
         g_foodTail = food;
     }
-    data_SerializeFood();
     return 0;
 }
 
