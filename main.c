@@ -52,7 +52,7 @@ HistoryItem *g_logTail;
 // PROTOTYPES
 // Food List Management
 Food *InitFood(char name[], int count);
-Food *QueryFood(char query[]);
+Food *QueryFood(char query[],char *fullName);
 void AppendFood(Food *food);
 int RemoveFood (Food *food);
 void IterateFoods(void (*callback)(Food *));
@@ -129,7 +129,7 @@ Food *InitFood(char name[], int count)
     return food;
 }
 
-Food *QueryFood(char query[])
+Food *QueryFood(char query[],char *fullName)
 {   
     LowerString(query);
     Food *ptr = g_foodHead;
@@ -141,11 +141,11 @@ Food *QueryFood(char query[])
         LowerString(s);
         if (strstr(s,query) != NULL)
         {
+            strcpy(fullName,ptr->name);
             return ptr;
         }
         ptr=ptr->next;
     }
-
     return NULL;
 }
 
@@ -177,6 +177,7 @@ int RemoveFood(Food *food) {
         if (ptr->next == food) {
             ptr->next = food->next;
             free(food);
+            AppendHistoryItem(InitHistoryItem("Removed item."));
             return 0;
         }
         ptr=ptr->next;
@@ -213,8 +214,8 @@ void PrintFood(Food *food)
 {
     printf("%s [%d]\n", food->name, food->count);
 }
-// History linkedlist operations
 
+// History linkedlist operations
 HistoryItem *InitHistoryItem(char note[])
 {
     HistoryItem *newOperation = malloc(sizeof(HistoryItem));
@@ -292,7 +293,7 @@ void DisplayNRecentChanges(int n)
     int index = skips + 1;
     while (ptr != NULL)
     {
-        printf("- [%-3d] \"%s\"\n", index, ptr->note);
+        printf("- %-3d \"%s\"\n", index, ptr->note);
         ptr = ptr->next;
         index++;
     }
@@ -303,7 +304,6 @@ void DisplayNRecentChanges(int n)
 // external data handling
 // marked with data_ to signify the importance
 // running some of these when not needed may be really bad
-
 void data_RewriteLogs()
 // rewrite and not write because it rewrites everything every time its called
 // no need for the serialization algorithm because its just linebreak seperated data
@@ -423,6 +423,166 @@ void data_DeserializeFood()
     fclose(datafile);
 }
 
+int MainTree()
+{
+    MenuTitle("Menu", "View important or urgent info and choose operations");
+    DisplayNRecentChanges(3);
+    // TODO: Display 0-3 highest and lowest stocked items
+    // TODO: maybe? make above two configurable
+    int command;
+    char cmdBuffer[100];
+
+    printf("Please enter a command\n");
+    printf("[1] to UPDATE quantities of the stored foods\n");
+    printf("[2] to ADD a food to the database\n");
+    printf("[3] to REMOVE a food from the database\n");
+    printf("[4] to LIST out the current database\n");
+    printf("[5] for session logs.\n");
+    printf("[6] to exit the program\n");
+    printf("Press a listed number followed by [Enter] to choose an option.\n");
+    // getchar();
+    fgets(cmdBuffer, sizeof(cmdBuffer), stdin);
+    int scanStatus = sscanf(cmdBuffer, "%d", &command);
+
+    if (scanStatus != 1)
+    {
+        printf("Invalid command.");
+        return 1;
+    }
+    switch (command)
+    {
+    case 1:
+        LineBreakNTimes(2);
+        g_usrState = UPDATE_MENU;
+        break;
+    case 2:
+        LineBreakNTimes(2);
+        g_usrState = ADD_MENU;
+        break;
+    case 3:
+        LineBreakNTimes(2);
+        g_usrState = REMOVE_MENU;
+        break;
+    case 4:
+        // whoopee, short enough to handle in the maintree
+        MenuTitle("Current Database", "Each food and how much is in stock");
+        if (g_foodHead == NULL)
+        {
+            printf("No foods are in the database.\n");
+        }
+        IterateFoods(PrintFood);
+        Pause();
+        break;
+    case 5:
+        MenuTitle("History", "Log of operations");
+        if (g_logHead == NULL)
+        {
+            printf("No operations have been performed yet.\n");
+        }
+        DisplayHistory();
+        Pause();
+        LineBreakNTimes(1);
+        break;
+    case 6:
+        return 0;
+    default:
+        break;
+    }
+    return 1;
+}
+
+void AddFoodMenu()
+{
+    MenuTitle("Add Food", "Add a new type of food to the database");
+    char countBuffer[LOADING_BUFFER_LENGTH];
+    Food *newFood = InitFood("", 0);
+    printf("Please enter the name of the new food: ");
+    fgets(newFood->name, sizeof(newFood->name), stdin);
+    printf("Please enter an initial amount of the good: ");
+    fgets(countBuffer, sizeof(countBuffer), stdin);
+    sscanf(countBuffer, "%d", &(newFood->count));
+    TrimNewline(newFood->name);
+
+    int addConfirmation = Confirm("Please confirm the database addition");
+    if (addConfirmation)
+    {
+        AppendFood(newFood);
+        HistoryItem *logitem = InitHistoryItem("Added item.");
+        AppendHistoryItem(logitem);
+        printf("Added %s [x%d] to the database\n", newFood->name, newFood->count);
+    }
+    else
+    {
+        free(newFood);
+        printf("Cancelled operation");
+    }
+
+    int repeatConfirmation = Confirm("Would you like to continue adding to the database?");
+    if (repeatConfirmation == 0)
+    {
+        g_usrState = MAIN_MENU;
+    }
+    // user state is already in add mode, dont need to change it if the user wants to continue
+
+    return;
+}
+
+void RemoveFoodMenu()
+{
+    char buffer[LOADING_BUFFER_LENGTH];
+    char fullName[LOADING_BUFFER_LENGTH];
+    printf("Input the name of the food you wish to remove (fuzzy-searched)\n");
+    fgets(buffer,sizeof(buffer),stdin);
+    TrimNewline(buffer);
+    Food *food = QueryFood(buffer,fullName);
+    if (food == NULL) {
+        printf("Could not find the food.");
+    }
+    else {
+        RemoveFood(food);
+        printf("Removed food \"%s\" successfully!\n",fullName);
+    }
+
+    if (Confirm("Do you want to continue removing foods?")) {
+        return;
+    }
+    g_usrState = MAIN_MENU;
+}
+
+void UpdateFoodMenu()
+{
+    // TODO: fgets the name and subcommand
+    // add to
+    // set
+    // subtract from
+    // then fgets & sscanf the amount
+}
+
+void MenuTitle(char *header, char *subheader)
+{
+    // TODO: figure out if its possible to filter the end of strings without null terminators because the program will bork itself
+    printf("░░░░░░░░░░░░░░░░░\n");
+    printf("[CANS] ");
+    while (*header != '\0')
+    {
+        printf("%c", *(header++));
+    }
+    printf("\n");
+    while (*subheader != '\0')
+    {
+        printf("%c", *(subheader++));
+    }
+    printf("\n%s\n", TITLE_DIVIDER);
+}
+
+void LineBreakNTimes(int n)
+{
+    for (; n > 0; n--)
+    {
+        printf("\n");
+    }
+}
+
 void TrimNewline(char *str)
 {
     str[strcspn(str, "\n")] = '\0';
@@ -501,163 +661,4 @@ int Exit()
     
 
     return 0;
-}
-
-void LineBreakNTimes(int n)
-{
-    for (; n > 0; n--)
-    {
-        printf("\n");
-    }
-}
-
-void MenuTitle(char *header, char *subheader)
-{
-    // TODO: figure out if its possible to filter the end of strings without null terminators because the program will bork itself
-    printf("░░░░░░░░░░░░░░░░░\n");
-    printf("[CANS] ");
-    while (*header != '\0')
-    {
-        printf("%c", *(header++));
-    }
-    printf("\n");
-    while (*subheader != '\0')
-    {
-        printf("%c", *(subheader++));
-    }
-    printf("\n%s\n", TITLE_DIVIDER);
-}
-
-void AddFoodMenu()
-{
-    MenuTitle("Add Food", "Add a new type of food to the database");
-    char countBuffer[LOADING_BUFFER_LENGTH];
-    Food *newFood = InitFood("", 0);
-    printf("Please enter the name of the new food: ");
-    fgets(newFood->name, sizeof(newFood->name), stdin);
-    printf("Please enter an initial amount of the good: ");
-    fgets(countBuffer, sizeof(countBuffer), stdin);
-    sscanf(countBuffer, "%d", &(newFood->count));
-    TrimNewline(newFood->name);
-
-    int addConfirmation = Confirm("Please confirm the database addition");
-    if (addConfirmation)
-    {
-        AppendFood(newFood);
-        HistoryItem *logitem = InitHistoryItem("Added item.");
-        AppendHistoryItem(logitem);
-        printf("Added %s [x%d] to the database\n", newFood->name, newFood->count);
-    }
-    else
-    {
-        free(newFood);
-        printf("Cancelled operation");
-    }
-
-    int repeatConfirmation = Confirm("Would you like to continue adding to the database?");
-    if (repeatConfirmation == 0)
-    {
-        g_usrState = MAIN_MENU;
-    }
-    // user state is already in add mode, dont need to change it if the user wants to continue
-
-    return;
-}
-
-
-void RemoveFoodMenu()
-{
-    char buffer[LOADING_BUFFER_LENGTH];
-    printf("Input the name of the food you wish to remove (fuzzy-searched)\n");
-    fgets(buffer,sizeof(buffer),stdin);
-    TrimNewline(buffer);
-    Food *food = QueryFood(buffer);
-    if (food == NULL) {
-        printf("Could not find the food.");
-    }
-    else {
-        RemoveFood(food);
-        printf("Removed food successfully");
-    }
-
-    if (Confirm("Do you want to continue removing foods?")) {
-        return;
-    }
-    g_usrState = MAIN_MENU;
-}
-void UpdateFoodMenu()
-{
-    // TODO: fgets the name and subcommand
-    // add to
-    // set
-    // subtract from
-    // then fgets & sscanf the amount
-}
-
-int MainTree()
-{
-    MenuTitle("Menu", "View important or urgent info and choose operations");
-    DisplayNRecentChanges(3);
-    // TODO: Display 0-3 highest and lowest stocked items
-    // TODO: maybe? make above two configurable
-    int command;
-    char cmdBuffer[100];
-
-    printf("Please enter a command\n");
-    printf("[1] to UPDATE quantities of the stored foods\n");
-    printf("[2] to ADD a food to the database\n");
-    printf("[3] to REMOVE a food from the database\n");
-    printf("[4] to LIST out the current database\n");
-    printf("[5] for session logs.\n");
-    printf("[6] to exit the program\n");
-    printf("Press a listed number followed by [Enter] to choose an option.\n");
-    // getchar();
-    fgets(cmdBuffer, sizeof(cmdBuffer), stdin);
-    int scanStatus = sscanf(cmdBuffer, "%d", &command);
-
-    if (scanStatus != 1)
-    {
-        printf("Invalid command.");
-        return 1;
-    }
-    switch (command)
-    {
-    case 1:
-        LineBreakNTimes(2);
-        g_usrState = UPDATE_MENU;
-        break;
-    case 2:
-        LineBreakNTimes(2);
-        g_usrState = ADD_MENU;
-        break;
-    case 3:
-        LineBreakNTimes(2);
-        g_usrState = REMOVE_MENU;
-        break;
-    case 4:
-        // whoopee, short enough to handle in the maintree
-        MenuTitle("Current Database", "Each food and how much is in stock");
-        if (g_foodHead == NULL)
-        {
-            printf("No foods are in the database.\n");
-        }
-        IterateFoods(PrintFood);
-        Pause();
-        break;
-    case 5:
-        MenuTitle("History", "Log of operations");
-        if (g_logHead == NULL)
-        {
-            printf("No operations have been performed yet.\n");
-        }
-        DisplayHistory();
-        Pause();
-        LineBreakNTimes(1);
-        break;
-    case 6:
-        return 0;
-    default:
-        break;
-    }
-    return 1;
 }
