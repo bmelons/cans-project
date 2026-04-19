@@ -472,7 +472,7 @@ int MainTree()
     printf("[3] to REMOVE a food from the database\n");
     printf("[4] to LIST out the current database\n");
     printf("[5] for session logs.\n");
-    printf("[6] to exit the program\n");
+    printf("[6] to SAVE & Exit the program\n");
     printf("Press a listed number followed by [Enter] to choose an option.\n");
     // getchar();
     fgets(cmdBuffer, sizeof(cmdBuffer), stdin);
