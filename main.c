@@ -9,12 +9,6 @@
 #define LINE_DIVIDER '\n'
 #define TITLE_DIVIDER "------"
 
-// @ TAYLER, see if your code editor has a TODO thing that searches for all instances of TODO in a codebase and puts it in a list, so useful epic
-
-//TODO: one of us, probably me because youre busy, goes and standardizes the return codes, some functions return 0 to indicate success and some return 1 for the same reason
-//      the c standard is that 0 == success so lets do that
-
-// TODO: move all funcs into prototypes for codebase sake
 
 enum UserStates
 {
@@ -461,8 +455,8 @@ int MainTree()
 {
     MenuTitle("Menu", "View important or urgent info and choose operations");
     DisplayNRecentChanges(3);
-    // TODO: Display 0-3 highest and lowest stocked items
-    // TODO: maybe? make above two configurable
+
+    
     int command;
     char cmdBuffer[100];
 
@@ -646,19 +640,10 @@ void UpdateFoodMenu()
     }
     g_usrState = MAIN_MENU;
 
-    
-    
-    
-    // TODO: fgets the name and subcommand
-    // add to
-    // set
-    // subtract from
-    // then fgets & sscanf the amount
 }
 
 void MenuTitle(char *header, char *subheader)
 {
-    // TODO: figure out if its possible to filter the end of strings without null terminators because the program will bork itself
     printf("░░░░░░░░░░░░░░░░░\n");
     printf("[CANS] ");
     while (*header != '\0')
@@ -747,7 +732,7 @@ int Exit()
 {
     data_SerializeFood();
     data_RewriteLogs();
-    // TODO: free all nodes/foods
+    
     Food *ptr = g_foodHead;
     Food *prev = g_foodHead;
     while (ptr != NULL)
