@@ -37,7 +37,7 @@ typedef struct Food
 
 typedef struct HistoryItem
 {
-    char note[128];
+    char note[LOADING_BUFFER_LENGTH];
     struct HistoryItem *next;
 
 } HistoryItem;
@@ -179,9 +179,12 @@ int RemoveFood(Food *food) {
 
     while (ptr != NULL) { // loop through list
         if (ptr->next == food) {
+            char historyMessage[LOADING_BUFFER_LENGTH];
+            snprintf(historyMessage,sizeof(historyMessage),"Removed item %s",food->name);
+            HistoryItem *logitem = InitHistoryItem(historyMessage);
+            AppendHistoryItem(logitem);
             ptr->next = food->next;
             free(food);
-            AppendHistoryItem(InitHistoryItem("Removed item."));
             return 0;
         }
         ptr=ptr->next;
@@ -191,9 +194,13 @@ int RemoveFood(Food *food) {
 
 void UpdateFood(Food *food,int quantity,int isSet) // def
 {
+    int initialCount = food->count;
     if (isSet) {
-        AppendHistoryItem(InitHistoryItem("Set food quantity"));
         food->count = quantity;
+        char historyMessage[LOADING_BUFFER_LENGTH];
+        snprintf(historyMessage,sizeof(historyMessage),"item %s set from %dx to %dx",food->name,initialCount,food->count);
+        HistoryItem *logitem = InitHistoryItem(historyMessage);
+        AppendHistoryItem(logitem);
     }
     else {
         if (quantity >= 0) {
@@ -203,6 +210,10 @@ void UpdateFood(Food *food,int quantity,int isSet) // def
             AppendHistoryItem(InitHistoryItem("Subtracted from a food"));
         }
         food->count += quantity;
+        char historyMessage[LOADING_BUFFER_LENGTH];
+        snprintf(historyMessage,sizeof(historyMessage),"item %s quantity changed by %d, %dx -> %dx",food->name,quantity,initialCount,food->count);
+        HistoryItem *logitem = InitHistoryItem(historyMessage);
+        AppendHistoryItem(logitem);
     }
     return;
 }
@@ -530,7 +541,10 @@ void AddFoodMenu()
     if (addConfirmation)
     {
         AppendFood(newFood);
-        HistoryItem *logitem = InitHistoryItem("Added item.");
+
+        char historyMessage[LOADING_BUFFER_LENGTH];
+        snprintf(historyMessage,sizeof(historyMessage),"Added item %s (%dx)",newFood->name,newFood->count);
+        HistoryItem *logitem = InitHistoryItem(historyMessage);
         AppendHistoryItem(logitem);
         printf("Added %s [x%d] to the database\n", newFood->name, newFood->count);
     }
