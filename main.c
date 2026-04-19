@@ -213,8 +213,7 @@ void UpdateFood(Food *food,int quantity,int isSet) // def
 }
 
 void IterateFoods(void (*callback)(Food *))
-{ // mostly a recipe for later use, but feel free to use with PrintFood
-    // under the assumption that following the trail of nexts from the head will always reach the tail
+{
     Food *ptr = g_foodHead;
     while (ptr != NULL)
     {
@@ -562,7 +561,7 @@ void RemoveFoodMenu()
 {
     char buffer[LOADING_BUFFER_LENGTH];
     char fullName[LOADING_BUFFER_LENGTH];
-    printf("Input the name of the food you wish to remove (fuzzy-searched)\n");
+    printf("Input the name of the food you wish to remove (partial-string-searched)\n");
     fgets(buffer,sizeof(buffer),stdin);
     TrimNewline(buffer);
     Food *food = QueryFood(buffer,fullName);
@@ -570,8 +569,11 @@ void RemoveFoodMenu()
         printf("Could not find the food.\n");
     }
     else {
-        RemoveFood(food);
-        printf("Removed food \"%s\" successfully!\n",fullName);
+        printf("Found %s!\n",fullName);
+        if (Confirm("Are you sure you want to remove the food??")) {
+            RemoveFood(food);
+            printf("Removed food \"%s\" successfully!\n",fullName);
+        }
     }
 
     if (Confirm("Do you want to continue removing foods?")) {
@@ -584,7 +586,7 @@ void UpdateFoodMenu()
 {
     char buffer[LOADING_BUFFER_LENGTH];
     char fullName[LOADING_BUFFER_LENGTH];
-    printf("Input the name of the food you wish to remove (fuzzy-searched)\n");
+    printf("Input the name of the food you wish to remove (partial-string-searched)\n");
     fgets(buffer,sizeof(buffer),stdin);
     TrimNewline(buffer);
     Food *food = QueryFood(buffer,fullName);
