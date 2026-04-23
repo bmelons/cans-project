@@ -47,6 +47,7 @@ HistoryItem *g_logTail;
 // Food List Management
 Food *InitFood(char name[], int count);
 Food *QueryFood(char query[],char *fullName);
+int QueryExactFood(char query[]);
 int AppendFood(Food *food);
 int RemoveFood (Food *food);
 void UpdateFood(Food *food,int newQuantity,int setOrAdd);
@@ -145,6 +146,21 @@ Food *QueryFood(char query[],char *fullName)
         ptr=ptr->next;
     }
     return NULL;
+}
+
+int QueryExactFood(char query[]) {
+    LowerString(query);
+    Food *ptr = g_foodHead;
+
+    while (ptr != NULL)
+    {
+        if (!strcasecmp(query,ptr->name)) {
+
+            return 1;
+        }
+        ptr=ptr->next;
+    }
+    return 0;
 }
 
 int AppendFood(Food *food)
@@ -523,18 +539,34 @@ void AddFoodMenu()
     MenuTitle("Add Food", "Add a new type of food to the database");
     char countBuffer[LOADING_BUFFER_LENGTH];
     Food *newFood = InitFood("", 0);
-    printf("Please enter the name of the new food: ");
-    fgets(newFood->name, sizeof(newFood->name), stdin);
+    while (1) {
+        printf("Please enter the name of the new food: ");
+        fgets(newFood->name, sizeof(newFood->name), stdin);
+        TrimNewline(newFood->name);
+        char bffr[MAX_FOOD_NAME_LENGTH];
+        strcpy(bffr,newFood->name);
+        if (!QueryExactFood(bffr)) {
+            break;
+        }
+        else
+        {
+            printf("Name already in use!!\n");
+        }
+    }
     printf("Please enter an initial amount of the good: ");
     fgets(countBuffer, sizeof(countBuffer), stdin);
-    sscanf(countBuffer, "%d", &(newFood->count));
-    TrimNewline(newFood->name);
+    int status = sscanf(countBuffer, "%d", &(newFood->count));
+    if (status<0)
+    {
+        printf("Invalid input, defaulting to 0, please update this to match the supply\n");
+        newFood->count = 0;
+    }
+    
 
     int addConfirmation = Confirm("Please confirm the database addition");
     if (addConfirmation)
     {
         AppendFood(newFood);
-
         char historyMessage[LOADING_BUFFER_LENGTH];
         snprintf(historyMessage,sizeof(historyMessage),"Added item %s (%dx)",newFood->name,newFood->count);
         HistoryItem *logitem = InitHistoryItem(historyMessage);
