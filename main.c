@@ -149,7 +149,6 @@ Food *QueryFood(char query[],char *fullName)
 }
 
 int QueryExactFood(char query[]) {
-    LowerString(query);
     Food *ptr = g_foodHead;
 
     while (ptr != NULL)
@@ -213,12 +212,6 @@ void UpdateFood(Food *food,int quantity,int isSet) // def
         AppendHistoryItem(logitem);
     }
     else {
-        if (quantity >= 0) {
-            AppendHistoryItem(InitHistoryItem("Added to a food"));
-        }
-        else{
-            AppendHistoryItem(InitHistoryItem("Subtracted from a food"));
-        }
         food->count += quantity;
         char historyMessage[LOADING_BUFFER_LENGTH];
         snprintf(historyMessage,sizeof(historyMessage),"item %s quantity changed by %d, %dx -> %dx",food->name,quantity,initialCount,food->count);

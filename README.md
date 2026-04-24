@@ -1,9 +1,6 @@
-# CANS: da big CS project
-## me & mx. thunder's cs course final project
-
+# CANS: Catalog Allocation & Notification System
 
 ![cans logo](./asset/image.webp)
-
 
 
 # compiling
